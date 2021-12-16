@@ -1,0 +1,11 @@
+first, we need to write functions to parse all various forms and report
+their value as a single 64bit integer
+this means that we need a dw2 expression interpreter for block forms
+this means that we need to handle reference forms correctly. how ? I don't know.
+then, we need to rework the callback api: use a per-attribute callback to report
+the value for each attribute.
+then, the caller must be able to compose callbacks with and/or propositions
+for each attribute so that it can check for the presence of
+a set of attributes in an entry.
+then, the caller must use the pubnames section to lookup function names
+then, must figure out the line number information.
