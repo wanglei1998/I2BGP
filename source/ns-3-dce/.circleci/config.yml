@@ -1,0 +1,117 @@
+version: 2
+general:
+  artifacts:
+
+do_steps: &do_steps
+ steps:
+  - restore_cache:
+      key: code-tree-shallow
+  - restore_cache:
+      key: bake-tree-cache
+  - run:
+      name: checkout build tree
+      command: |
+        mkdir -p ~/.ssh/
+        ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+        if ! [ -d .git ]; then
+          git clone $CIRCLE_REPOSITORY_URL .;
+        fi
+        if [[ $CIRCLE_BRANCH == pull/* ]]; then
+           git fetch origin $CIRCLE_BRANCH/head;
+        else
+           git fetch origin $CIRCLE_BRANCH;
+        fi
+        git reset --hard $CIRCLE_SHA1
+
+  - run:
+      name: download bake and codes
+      environment:
+      command: |
+        if [ -z "${BAKE_BRANCH}" ] ; then export BAKE_BRANCH="master" ; fi
+        if [ -z "${BAKE_MOD_VERSION}" ] ; then export BAKE_MOD_VERSION="dev" ; fi
+
+        # we clone a fork of bake
+        cd "$HOME" && git clone -b ${BAKE_BRANCH} git://github.com/nsnam/bake-git ./bake
+
+        # setup environment
+        OS=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+        if [[ $OS = "\"Ubuntu\"" ]] ; then 
+          sudo apt-get update; sudo apt-get install -y python-pip python3-pip ;
+        elif [[ $OS = "Fedora" ]] ; then
+          sudo yum -y update ; sudo yum install -y python-pip python3-pip;
+        fi
+
+        sudo pip install distro requests; sudo pip3 install distro requests                    
+
+        cd "$HOME" && ./bake/bake.py configure -e dce-umip-${BAKE_MOD_VERSION} -e dce-linux-${BAKE_MOD_VERSION}
+        cd "$HOME" && ./bake/bake.py download -vvv
+
+  - save_cache:
+      key: code-tree-shallow-{{ epoch }}
+      paths:
+        - /home/ns3dce/project/.git
+
+  - save_cache:
+      key: bake-tree-cache-{{ epoch }}
+      paths:
+        - /home/ns3dce/source
+
+  - run: mkdir -p /home/ns3dce/.ccache
+  - restore_cache:
+      key: compiler-cache-{{ .Environment.CIRCLE_JOB }}
+  - run: ccache -M 5.0G
+  - run:
+      name: build dce
+      command: |
+        # bake installs the master branch hence DCE will be install $CIRCLE_BRANCH
+        cd ${HOME}/source/ns-3-dce && git remote add local "$HOME/project" && \
+            git fetch local -a && git reset --hard $CIRCLE_SHA1
+        cd "$HOME" && ./bake/bake.py build -j1 -vvv
+
+  - save_cache:
+     paths:
+       - /home/ns3dce/.ccache
+     key: compiler-cache-{{ .Environment.CIRCLE_JOB }}-{{ epoch }}
+  - run: cd ${HOME}/source/ns-3-dce && ./test.py -r
+  - run:
+      name: save test results
+      environment:
+        TERM: dumb
+      command: |
+        mkdir -p ~/junit/
+        find ~/source -type f -name results.xml -exec cp {} ~/junit/ \;
+        find ~/source -type f -name xml2junit.xsl -exec cp {} ~/junit/ \;
+        cp -rpf ~/source/ns-3-dce/testpy-output ~/
+        saxonb-xslt ~/junit/results.xml ~/junit/xml2junit.xsl  > ~/junit/junit-results.xml
+      when: always
+  - store_test_results:
+      path: ~/junit
+  - store_artifacts:
+      path: ~/junit
+  - store_artifacts:
+      path: ~/testpy-output
+
+## Customize the test machine
+jobs:
+  ubuntu16.04:
+   docker:
+     - image: ns3dce/ubuntu16.04:0.1
+   environment:
+   <<: *do_steps
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+     - ubuntu16.04
+  nightly_workflow:
+    triggers:
+      - schedule:
+          cron: "0 1 * * *" # run at 1am UTC
+          filters:
+            branches:
+              only:
+                - fix-valgrind-test    
+    jobs:
+      - ubuntu14.04_valgrind
