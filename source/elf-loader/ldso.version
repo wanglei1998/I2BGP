@@ -1,0 +1,53 @@
+VDL_DL {
+global:
+	vdl_dlopen_public;
+	vdl_dlclose_public;
+	vdl_dlsym_public;
+	vdl_dlerror_public;
+	vdl_dladdr_public;
+	vdl_dlvsym_public;
+	vdl_dl_iterate_phdr_public;
+	vdl_dlinfo_public;
+	vdl_dlmopen_public;
+	vdl_dl_lmid_new_public;
+	vdl_dl_lmid_delete_public;
+	vdl_dl_lmid_add_lib_remap_public;
+	vdl_dl_lmid_add_symbol_remap_public;
+	vdl_dl_lmid_add_callback_public;
+	libc_freeres_interceptor;
+};
+GLIBC_2.2.5 {
+global:
+	free;
+	realloc;
+	_r_debug;
+	__libc_stack_end;
+	__libc_memalign;
+	calloc;
+	_dl_mcount;
+	malloc;
+local:*;
+};
+GLIBC_2.3 {
+global:
+	__tls_get_addr;
+} GLIBC_2.2.5;
+GLIBC_2.4 {
+} GLIBC_2.3;
+GLIBC_PRIVATE {
+global:
+	__get_cpu_features;
+	_dl_get_tls_static_info;
+	_dl_allocate_tls;
+	_dl_deallocate_tls;
+	_dl_find_dso_for_object;
+	_dl_argv;
+	_dl_tls_setup;
+	_dl_debug_state;
+	_rtld_global;
+	_dl_make_stack_executable;
+	_dl_allocate_tls_init;
+	_rtld_global_ro;
+	__libc_enable_secure;
+	_dl_rtld_di_serinfo;
+} GLIBC_2.4;

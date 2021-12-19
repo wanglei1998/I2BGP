@@ -1,0 +1,11 @@
+#define CONFIG_RTLD_GLOBAL_SIZE 3968
+#define CONFIG_RTLD_GLOBAL_RO_SIZE 376
+#define CONFIG_RTLD_DL_PAGESIZE_OFFSET 24
+#define CONFIG_DL_ERROR_CATCH_TSD_OFFSET 2448
+#define CONFIG_TCB_SIZE 2304
+#define CONFIG_TCB_TCB_OFFSET 0
+#define CONFIG_TCB_DTV_OFFSET 8
+#define CONFIG_TCB_SELF_OFFSET 16
+#define CONFIG_TCB_SYSINFO_OFFSET 32
+#define CONFIG_TCB_STACK_GUARD 40
+#define CONFIG_SYSTEM_LDSO_LIBRARY_PATH "/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu/libfakeroot:/lib32:/usr/lib32:/usr/lib/x86_64-linux-gnu/mesa-egl:/libx32:/usr/libx32:/usr/local/lib:/usr/lib/x86_64-linux-gnu/mesa"
